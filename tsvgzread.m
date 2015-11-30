@@ -4,8 +4,6 @@ function [out_arr] = tsvgzread(filename)
     decoder = java.io.InputStreamReader(gzipStream);
     buffered = java.io.BufferedReader(decoder);
 
-
-    stringBuffer = java.lang.StringBuffer();
     out_arr = [];
     while 1
         line = buffered.readLine();
