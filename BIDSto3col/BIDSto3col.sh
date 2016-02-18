@@ -3,11 +3,15 @@
 # Script: BIDSto3col.sh
 # Purpose: Convert a BIDS event TSV file to a 3 column FSL file
 # Author: T Nichols t.e.nichols@warwick.ac.uk
-# Version: 1.0
+# Version: 1.1   17 Feb 2016
 #
 
 # Extension to give created 3 column files
 ThreeColExt="txt"
+
+# To avoid headaches with spaces in filenames, replace spaces in event names 
+# with this character.
+SpaceReplace="_"
 
 
 ###############################################################################
@@ -37,6 +41,9 @@ height value (3rd column) is 1.0.
 Options
   -e EventName   Instead of all event types, only use the given event type.
   -h ColName     Instead of using 1.0, get height value from given column.
+  -N             By default, when creating 3 column files any spaces in the 
+                 event name are replaced with "$SpaceReplace"; use this option to
+                 prevent this replacement.
 EOF
 exit
 }
@@ -68,6 +75,10 @@ while (( $# > 1 )) ; do
             HeightNm="$1"
             shift
             ;;
+        "-N")
+            shift
+            NoSpaceRepl=1
+            ;;
         -*)
             echo "ERROR: Unknown option '$1'"
             exit 1
@@ -98,8 +109,13 @@ if [ ! -f "$TSV" ] ; then
     CleanUp
 fi
 
-# Get all event names
-EventNms=( $(awk -F'\t' '(NR>1){print $3}' "$TSV" | sort | uniq ) )
+# Get all event names  (need to loop to handle spaces)
+awk -F'\t' '(NR>1){print $3}' "$TSV" | sort | uniq > ${Tmp}AllEv
+nEV=$(cat ${Tmp}AllEv | wc -l)
+EventNms=()
+for ((i=1;i<=nEV;i++)); do 
+    EventNms[i-1]="$(sed -n ${i}p ${Tmp}AllEv)"
+done
 
 # Validate requested event name
 if [ "$EventNm" != "" ] ; then
@@ -135,7 +151,11 @@ fi
 
 for E in "${EventNms[@]}" ; do
 
-    Out="$OutBase"_"$E"."$ThreeColExt"
+    if [ "$NoSpaceRepl" = 1 ] ; then
+	Out="$OutBase"_"$E"."$ThreeColExt"
+    else
+	Out="$OutBase"_"$(echo $E | sed 's/ /'$SpaceReplace'/g')"."$ThreeColExt"
+    fi
 
     echo "Creating '$Out'... "
 
