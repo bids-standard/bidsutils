@@ -13,6 +13,8 @@ ThreeColExt="txt"
 # with this character.
 SpaceReplace="_"
 
+# Event type column
+TypeNm="trial_type"
 
 ###############################################################################
 #
@@ -36,11 +38,19 @@ Usage: `basename $0` [options] BidsTSV OutBase
 
 Reads BidsTSV and then creates 3 column event files, one per event type, 
 using the basename OutBase.  By default, all event types are used, and the 
-height value (3rd column) is 1.0.
+height value (3rd column) is 1.0. 
 
 Options
   -e EventName   Instead of all event types, only use the given event type.
-  -h ColName     Instead of using 1.0, get height value from given column.
+  -s EventName   Treat all rows as a single event type; specify the EventName
+                 to be used when creating the file name for the 3 column file.
+  -h HtColName   Instead of using 1.0, get height value from given column; two 
+                 files are written, the unmodulated (with 1.0 in 3rd column) 
+                 and the modulated one, having a "_pmod" suffix.
+  -d DurColName  Instead of getting duration from the "duration" column, take
+                 it from this named column.
+  -t TypeColName Instead of getting trial type from "trial_type" column, use this
+                 column.
   -N             By default, when creating 3 column files any spaces in the 
                  event name are replaced with "$SpaceReplace"; use this option to
                  prevent this replacement.
@@ -52,7 +62,6 @@ CleanUp () {
     /bin/rm -f /tmp/`basename $0`-${$}-*
     exit 0
 }
-
 
 ###############################################################################
 #
@@ -70,9 +79,19 @@ while (( $# > 1 )) ; do
             EventNm="$1"
             shift
             ;;
+        "-s")
+            shift
+            SingEventNm="$1"
+            shift
+            ;;
         "-h")
             shift
             HeightNm="$1"
+            shift
+            ;;
+        "-d")
+            shift
+            DurNm="$1"
             shift
             ;;
         "-N")
@@ -109,39 +128,60 @@ if [ ! -f "$TSV" ] ; then
     CleanUp
 fi
 
-# Get all event names  (need to loop to handle spaces)
-awk -F'\t' '(NR>1){print $3}' "$TSV" | sort | uniq > ${Tmp}AllEv
-nEV=$(cat ${Tmp}AllEv | wc -l)
-EventNms=()
-for ((i=1;i<=nEV;i++)); do 
-    EventNms[i-1]="$(sed -n ${i}p ${Tmp}AllEv)"
-done
-
-# Validate requested event name
-if [ "$EventNm" != "" ] ; then
-    Fail=1
-    for ((i=0;i<${#EventNms[*]};i++)) ; do
-	if [ "${EventNms[i]}" = "$EventNm" ] ; then
-	    Fail=0
-	    break
-	fi
-    done
-    if [ $Fail = 1 ] ; then
-	echo "ERROR: Event type '$EventNm' not found in TSV file."
+# Duration column
+if [ "$DurNm" = "" ] ; then
+    DurCol=2
+else
+    # Validate duration column name
+    DurCol=$( awk -F'\t' '(NR==1){for(i=1;i<=NF;i++){if($i=="'"$DurNm"'")print i}}' "$TSV")
+    if [ "$DurCol" = "" ] ; then
+	echo "ERROR: Column '$DurNm' not found in TSV file."
 	CleanUp
     fi
-    EventNms=("$EventNm")
+fi
+
+# Validate trial_type column name
+TypeCol=$( awk -F'\t' '(NR==1){for(i=1;i<=NF;i++){if($i=="'"$TypeNm"'")print i}}' "$TSV")
+if [ "$TypeCol" = "" ] ; then
+    echo "ERROR: Column '$TypeNm' not found in TSV file."
+    CleanUp
+fi
+
+
+if [ "$SingEventNm" != "" ] ; then
+
+    EventNms=("$SingEventNm")
+
+else
+
+    # Get all event names  (need to loop to handle spaces)
+    awk -F'\t' '(NR>1){print $'"$TypeCol"'}' "$TSV" | sort | uniq > ${Tmp}AllEv
+    nEV=$(cat ${Tmp}AllEv | wc -l)
+    EventNms=()
+    for ((i=1;i<=nEV;i++)); do 
+	EventNms[i-1]="$(sed -n ${i}p ${Tmp}AllEv)"
+    done
+    
+    # Validate requested event name
+    if [ "$EventNm" != "" ] ; then
+	Fail=1
+	for ((i=0;i<${#EventNms[*]};i++)) ; do
+	    if [ "${EventNms[i]}" = "$EventNm" ] ; then
+		Fail=0
+		break
+	    fi
+	done
+	if [ $Fail = 1 ] ; then
+	    echo "ERROR: Event type '$EventNm' not found in TSV file."
+	    CleanUp
+	fi
+	EventNms=("$EventNm")
+    fi
 fi
 
 # Validate height column name
 if [ "$HeightNm" != "" ] ; then
-    VarNms=( $(awk -F'\t' '(NR==1){print $0}' "$TSV") )
-    for ((i=2;i<${#VarNms[*]};i++)) ; do
-	if [ "${VarNms[i]}" = "$HeightNm" ] ; then
-	    ((HeightCol=i+1));
-	    break
-	fi
-    done
+    HeightCol=$( awk -F'\t' '(NR==1){for(i=1;i<=NF;i++){if($i=="'"$HeightNm"'")print i}}' "$TSV")
     if [ "$HeightCol" = "" ] ; then
 	echo "ERROR: Column '$HeightNm' not found in TSV file."
 	CleanUp
@@ -153,23 +193,30 @@ for E in "${EventNms[@]}" ; do
 
     if [ "$NoSpaceRepl" = 1 ] ; then
 	Out="$OutBase"_"$E"."$ThreeColExt"
+	OutHt="$OutBase"_"$E"_pmod."$ThreeColExt"
     else
 	Out="$OutBase"_"$(echo $E | sed 's/ /'$SpaceReplace'/g')"."$ThreeColExt"
+	OutHt="$OutBase"_"$(echo $E | sed 's/ /'$SpaceReplace'/g')"_pmod."$ThreeColExt"
     fi
 
     echo "Creating '$Out'... "
 
-    if [ "$HeightNm" = "" ] ; then
-
-	awk -F'\t' '$3~/^'"$E"'$/{printf("%s	%s	1.0\n",$1,$2)}'                "$TSV" > "$Out"
-
+    if [ "$SingEventNm" = "" ] ; then
+	AwkSel='$'"$TypeCol"'~/^'"$E"'$/'
     else
+	AwkSel="(NR>1)"
+    fi
 
-	awk -F'\t' '$3~/^'"$E"'$/{printf("%s	%s	%s\n",$1,$2,$'"$HeightCol"')}' "$TSV" > "$Out"
+
+    awk -F'\t' "$AwkSel"'{printf("%s	%s	1.0\n",$1,$'"$DurCol"')}'                "$TSV" > "$Out"
+
+    if [ "$HeightNm" != "" ] ; then
+
+	awk -F'\t' "$AwkSel"'{printf("%s	%s	%s\n",$1,$'"$DurCol"',$'"$HeightCol"')}' "$TSV" > "$OutHt"
 
 	# Validate height values
-	Nev="$(cat "$Out" | wc -l)"
-	Nnum="$(awk '{print $3}' "$Out" | grep -E '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$' | wc -l )"
+	Nev="$(cat "$OutHt" | wc -l)"
+	Nnum="$(awk '{print $3}' "$OutHt" | grep -E '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$' | wc -l )"
 	if [ "$Nev" != "$Nnum" ] ; then
 	    echo "	WARNING: Event '$E' has non-numeric heights from '$HeightNm'"
 	fi
