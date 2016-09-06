@@ -3,7 +3,7 @@
 # Script: BIDSto3col.sh
 # Purpose: Convert a BIDS event TSV file to a 3 column FSL file
 # Author: T Nichols t.e.nichols@warwick.ac.uk
-# Version: 1.1   17 Feb 2016
+# Version: 1.2   5 September 2016
 #
 
 # Extension to give created 3 column files
@@ -36,24 +36,34 @@ Usage() {
 cat <<EOF
 Usage: `basename $0` [options] BidsTSV OutBase 
 
-Reads BidsTSV and then creates 3 column event files, one per event type, 
-using the basename OutBase.  By default, all event types are used, and the 
-height value (3rd column) is 1.0. 
+Reads BidsTSV and then creates 3 column event files, one per event
+type; files are named as basename OutBase and appended with the event
+name. By default, all event types are used, and the height value (3rd
+column) is 1.0.  
+
+Assumes the presense of a (BIDS optional) "trial_type" column.  Use -t 
+option to set a different name for this column, or -s to ignore trial
+type. 
 
 Options
-  -e EventName   Instead of all event types, only use the given event type.
-  -s EventName   Treat all rows as a single event type; specify the EventName
-                 to be used when creating the file name for the 3 column file.
-  -h HtColName   Instead of using 1.0, get height value from given column; two 
-                 files are written, the unmodulated (with 1.0 in 3rd column) 
-                 and the modulated one, having a "_pmod" suffix.
-  -d DurColName  Instead of getting duration from the "duration" column, take
-                 it from this named column.
-  -t TypeColName Instead of getting trial type from "trial_type" column, use this
-                 column.
-  -N             By default, when creating 3 column files any spaces in the 
-                 event name are replaced with "$SpaceReplace"; use this option to
-                 prevent this replacement.
+  -e EventName   Instead of all event types, only use the given event
+                 type. 
+  -s EventName   Treat all rows as a single event type; specify the
+                 EventName to be used when creating the file name for
+                 the 3 column file. 
+  -n             When only one event type (e.g. when -e or -s option
+                 used) do not append the event name to OutBase. 
+  -h HtColName   Instead of using 1.0, get height value from given
+                 column; two files are written, the unmodulated (with
+                 1.0 in 3rd column) and the modulated one, having a
+                 "_pmod" suffix. 
+  -d DurColName  Instead of getting duration from the "duration"
+                 column, take it from this named column.
+  -t TypeColName Instead of getting trial type from "trial_type"
+                 column, use this column.
+  -N             By default, when creating 3 column files any spaces
+                 in the event name are replaced with "$SpaceReplace";
+                 use this option to prevent this replacement.
 EOF
 exit
 }
@@ -83,6 +93,10 @@ while (( $# > 1 )) ; do
             shift
             SingEventNm="$1"
             shift
+            ;;
+        "-n")
+            shift
+            NoAppend=1
             ;;
         "-h")
             shift
@@ -188,16 +202,26 @@ if [ "$HeightNm" != "" ] ; then
     fi
 fi
 
+if [ ${#EventNms[*]} -gt 1 ] && [ "$NoAppend" = 1 ] ; then
+    echo "ERROR: No append option (-n) cannot be used with multiple event types."
+    CleanUp
+fi
+
 
 for E in "${EventNms[@]}" ; do
 
-    if [ "$NoSpaceRepl" = 1 ] ; then
-	Out="$OutBase"_"$E"."$ThreeColExt"
-	OutHt="$OutBase"_"$E"_pmod."$ThreeColExt"
+    if [ "$NoAppend" = 1 ] ; then
+	App=""
     else
-	Out="$OutBase"_"$(echo $E | sed 's/ /'$SpaceReplace'/g')"."$ThreeColExt"
-	OutHt="$OutBase"_"$(echo $E | sed 's/ /'$SpaceReplace'/g')"_pmod."$ThreeColExt"
+	if [ "$NoSpaceRepl" = 1 ] ; then
+	    App="_${E}"
+	else
+	    App="_$(echo "$E" | sed 's/ /'$SpaceReplace'/g')"
+	fi
     fi
+
+    Out="${OutBase}${App}.${ThreeColExt}"
+    OutHt="${OutBase}${App}_pmod.${ThreeColExt}"
 
     echo "Creating '$Out'... "
 
