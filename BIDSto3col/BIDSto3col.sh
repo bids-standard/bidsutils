@@ -16,6 +16,9 @@ SpaceReplace="_"
 # Event type column
 TypeNm="trial_type"
 
+# Awk header; a command to protect against DOS/Windows carriage returns
+AwkHd='{sub(/\r$/,"")}'
+
 ###############################################################################
 #
 # Environment set up
@@ -147,7 +150,7 @@ if [ "$DurNm" = "" ] ; then
     DurCol=2
 else
     # Validate duration column name
-    DurCol=$( awk -F'\t' '(NR==1){for(i=1;i<=NF;i++){if($i=="'"$DurNm"'")print i}}' "$TSV")
+    DurCol=$( awk -F'\t' "$AwkHd"'(NR==1){for(i=1;i<=NF;i++){if($i=="'"$DurNm"'")print i}}' "$TSV")
     if [ "$DurCol" = "" ] ; then
 	echo "ERROR: Column '$DurNm' not found in TSV file."
 	CleanUp
@@ -155,7 +158,7 @@ else
 fi
 
 # Validate trial_type column name
-TypeCol=$( awk -F'\t' '(NR==1){for(i=1;i<=NF;i++){if($i=="'"$TypeNm"'")print i}}' "$TSV")
+TypeCol=$( awk -F'\t' "$AwkHd"'(NR==1){for(i=1;i<=NF;i++){if($i=="'"$TypeNm"'")print i}}' "$TSV")
 if [ "$TypeCol" = "" ] ; then
     echo "ERROR: Column '$TypeNm' not found in TSV file."
     CleanUp
@@ -169,7 +172,7 @@ if [ "$SingEventNm" != "" ] ; then
 else
 
     # Get all event names  (need to loop to handle spaces)
-    awk -F'\t' '(NR>1){print $'"$TypeCol"'}' "$TSV" | sort | uniq > ${Tmp}AllEv
+    awk -F'\t' "$AwkHd"'(NR>1){print $'"$TypeCol"'}' "$TSV" | sort | uniq > ${Tmp}AllEv
     nEV=$(cat ${Tmp}AllEv | wc -l)
     EventNms=()
     for ((i=1;i<=nEV;i++)); do 
@@ -195,7 +198,7 @@ fi
 
 # Validate height column name
 if [ "$HeightNm" != "" ] ; then
-    HeightCol=$( awk -F'\t' '(NR==1){for(i=1;i<=NF;i++){if($i=="'"$HeightNm"'")print i}}' "$TSV")
+    HeightCol=$( awk -F'\t' "$AwkHd"'(NR==1){for(i=1;i<=NF;i++){if($i=="'"$HeightNm"'")print i}}' "$TSV")
     if [ "$HeightCol" = "" ] ; then
 	echo "ERROR: Column '$HeightNm' not found in TSV file."
 	CleanUp
@@ -232,11 +235,11 @@ for E in "${EventNms[@]}" ; do
     fi
 
 
-    awk -F'\t' "$AwkSel"'{printf("%s	%s	1.0\n",$1,$'"$DurCol"')}'                "$TSV" > "$Out"
+    awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	1.0\n",$1,$'"$DurCol"')}'                "$TSV" > "$Out"
 
     if [ "$HeightNm" != "" ] ; then
 
-	awk -F'\t' "$AwkSel"'{printf("%s	%s	%s\n",$1,$'"$DurCol"',$'"$HeightCol"')}' "$TSV" > "$OutHt"
+	awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	%s\n",$1,$'"$DurCol"',$'"$HeightCol"')}' "$TSV" > "$OutHt"
 
 	# Validate height values
 	Nev="$(cat "$OutHt" | wc -l)"
