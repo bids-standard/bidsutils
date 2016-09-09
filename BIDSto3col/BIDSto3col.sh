@@ -17,7 +17,7 @@ SpaceReplace="_"
 TypeNm="trial_type"
 
 # Awk header; a command to protect against DOS/Windows carriage returns
-AwkHd='{sub(/\r$/,"")}'
+AwkHd='{sub(/\r$/,"")};'
 
 ###############################################################################
 #
