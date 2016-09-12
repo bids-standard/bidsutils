@@ -9,6 +9,9 @@
 # Extension to give created 3 column files
 ThreeColExt="txt"
 
+# Replace slashes in event names with this character.
+SlashReplace=""
+
 # To avoid headaches with spaces in filenames, replace spaces in event names 
 # with this character.
 SpaceReplace="_"
@@ -28,7 +31,6 @@ AwkHd='{sub(/\r$/,"")};'
 shopt -s nullglob # No-match globbing expands to null
 Tmp=/tmp/`basename $0`-${$}-
 trap CleanUp INT
-
 ###############################################################################
 #
 # Functions
@@ -213,6 +215,8 @@ for E in "${EventNms[@]}" ; do
     if [ "$NoAppend" = 1 ] ; then
 	App=""
     else
+	E="$(echo "$E" | sed 's@/@'$SlashReplace'@g')"
+
 	if [ "$NoSpaceRepl" = 1 ] ; then
 	    App="_${E}"
 	else
