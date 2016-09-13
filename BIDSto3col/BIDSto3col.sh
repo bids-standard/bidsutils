@@ -51,9 +51,7 @@ Options
   -s             Even if "$TypeNm" column is found, ignore and process
                  all rows as a single event type.
   -e EventName   Instead of all event types, only use the given event
-                 type. 
-  -E EventName   Same as -e, except output file name does not have
-                 EventName appended.
+                 type (no event name appended to OutBase).. 
   -h HtColName   Instead of using 1.0, get height value from given
                  column; two files are written, the unmodulated (with
                  1.0 in 3rd column) and the modulated one, having a
@@ -91,11 +89,6 @@ while (( $# > 1 )) ; do
             shift
             ;;
         "-e")
-            shift
-            EventNm="$1"
-            shift
-            ;;
-        "-E")
             shift
             EventNm="$1"
 	    NoAppend=1
