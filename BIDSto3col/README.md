@@ -14,7 +14,7 @@ Options
   -s             Even if "trial_type" column is found, ignore and process
                  all rows as a single event type.
   -e EventName   Instead of all event types, only use the given event
-                 type. 
+                 type (no event name appended to OutBase). 
   -E EventName   Same as -e, except output file name does not have
                  EventName appended.
   -h HtColName   Instead of using 1.0, get height value from given
