@@ -22,6 +22,9 @@ TypeNm="trial_type"
 # Awk header; a command to protect against DOS/Windows carriage returns
 AwkHd='{sub(/\r$/,"")};'
 
+# Temporal shift; value to be *subtracted* from each onset
+ShiftSec=0
+
 ###############################################################################
 #
 # Environment set up
@@ -60,6 +63,9 @@ Options
                  column, take it from this named column.
   -t TypeColName Instead of getting trial type from "trial_type"
                  column, use this column.
+  -b Sec         Shift onset times backwards, subtracting specified
+                 value (in seconds) from each onset. (Useful when
+                 initial acquistions are discarded).
   -N             By default, when creating 3 column files any spaces
                  in the event name are replaced with "$SpaceReplace";
                  use this option to suppress this replacement.
@@ -113,6 +119,11 @@ while (( $# > 1 )) ; do
             shift
             NoSpaceRepl=1
             ;;
+        "-b")
+            shift
+            ShiftSec="$1"
+            shift
+            ;;
         -*)
             echo "ERROR: Unknown option '$1'"
             exit 1
@@ -142,6 +153,13 @@ if [ ! -f "$TSV" ] ; then
     echo "ERROR: Cannot find '$TSV'."
     CleanUp
 fi
+
+# Validate shift
+if [ $(echo "$ShiftSec" | grep -E '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$' | wc -l ) = 0 ] ; then
+    echo "ERROR: Shift in seconds '$ShiftSec' is not a valid number."
+    CleanUp
+fi
+
 
 # Duration column
 if [ "$DurNm" = "" ] ; then
@@ -229,7 +247,7 @@ for E in "${EventNms[@]}" ; do
     fi
 
 
-    awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	1.0\n",$1,$'"$DurCol"')}'                "$TSV" > "$Out"
+    awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	1.0\n",$1-('"$ShiftSec"'),$'"$DurCol"')}'                "$TSV" > "$Out"
 
     # Validate duration values (if non-standard duration used)
     if [ "$DurNm" != "" ] ; then
@@ -242,7 +260,7 @@ for E in "${EventNms[@]}" ; do
 
     if [ "$HeightNm" != "" ] ; then
 
-	awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	%s\n",$1,$'"$DurCol"',$'"$HeightCol"')}' "$TSV" > "$OutHt"
+	awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	%s\n",$1-('"$ShiftSec"'),$'"$DurCol"',$'"$HeightCol"')}' "$TSV" > "$OutHt"
 
 	# Validate height values
 	Nev="$(cat "$OutHt" | wc -l)"
