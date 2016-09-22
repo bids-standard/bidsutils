@@ -25,6 +25,9 @@ Options
                  column, take it from this named column.
   -t TypeColName Instead of getting trial type from "trial_type"
                  column, use this column.
+  -b Sec         Shift onset times backwards, subtracting specified
+                 value (in seconds) from each onset. (Useful when
+                 initial acquistions are discarded).
   -N             By default, when creating 3 column files any spaces
                  in the event name are replaced with "$SpaceReplace";
                  use this option to suppress this replacement.
