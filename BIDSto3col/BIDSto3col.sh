@@ -102,7 +102,6 @@ while (( $# > 1 )) ; do
         "-s")
             shift
             AllEvents=1
-            shift
             ;;
         "-e")
             shift
