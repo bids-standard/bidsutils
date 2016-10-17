@@ -78,6 +78,16 @@ CleanUp () {
     exit 0
 }
 
+FailIfEmpty() {
+    local Val="$1" ValNm="$2"
+
+    if [ "$Val" = "" ] ; then
+	echo "ERROR: Empty value given for $ValNm"
+	CleanUp
+    fi
+}
+
+
 ###############################################################################
 #
 # Parse arguments
@@ -134,6 +144,13 @@ while (( $# > 1 )) ; do
             ;;
     esac
 done
+
+FailIfEmpty "$EventNm" "event name (-e option)"
+FailIfEmpty "$HeightNm" "height column name (-h option)"
+FailIfEmpty "$DurNm" "duration column name (-d option)"
+FailIfEmpty "$TypeNm" "trial type column name (-t option)"
+FailIfEmpty "$ShiftSEc" "seconds shift (-b option)"
+
 
 if (( $# < 2 )) ; then
     Usage
