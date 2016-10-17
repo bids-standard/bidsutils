@@ -109,21 +109,25 @@ while (( $# > 1 )) ; do
             EventNm="$1"
 	    NoAppend=1
             shift
+	    FailIfEmpty "$EventNm" "event name (-e option)"
             ;;
         "-h")
             shift
             HeightNm="$1"
             shift
+	    FailIfEmpty "$HeightNm" "height column name (-h option)"
             ;;
         "-d")
             shift
             DurNm="$1"
             shift
+	    FailIfEmpty "$DurNm" "duration column name (-d option)"
             ;;
         "-t")
             shift
             TypeNm="$1"
             shift
+	    FailIfEmpty "$TypeNm" "trial type column name (-t option)"
             ;;
         "-N")
             shift
@@ -132,6 +136,7 @@ while (( $# > 1 )) ; do
         "-b")
             shift
             ShiftSec="$1"
+	    FailIfEmpty "$ShiftSEc" "seconds shift (-b option)"
             shift
             ;;
         -*)
@@ -145,11 +150,6 @@ while (( $# > 1 )) ; do
     esac
 done
 
-FailIfEmpty "$EventNm" "event name (-e option)"
-FailIfEmpty "$HeightNm" "height column name (-h option)"
-FailIfEmpty "$DurNm" "duration column name (-d option)"
-FailIfEmpty "$TypeNm" "trial type column name (-t option)"
-FailIfEmpty "$ShiftSEc" "seconds shift (-b option)"
 
 
 if (( $# < 2 )) ; then
