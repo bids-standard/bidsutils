@@ -190,11 +190,15 @@ else
 fi
 
 # Validate trial_type column name
-TypeCol=$( awk -F'\t' "$AwkHd"'(NR==1){for(i=1;i<=NF;i++){if($i=="'"$TypeNm"'")print i}}' "$TSV")
-if [ "$TypeCol" = "" ] ; then
-    echo "WARNING: Column '$TypeNm' not found in TSV file; using all rows."
-    AllEvents=1
+if [ "$AllEvents" = 1 ] ; then
     NoAppend=1
+else
+    TypeCol=$( awk -F'\t' "$AwkHd"'(NR==1){for(i=1;i<=NF;i++){if($i=="'"$TypeNm"'")print i}}' "$TSV")
+    if [ "$TypeCol" = "" ] ; then
+	echo "WARNING: Column '$TypeNm' not found in TSV file; using all rows."
+	AllEvents=1
+	NoAppend=1
+    fi
 fi
 
 if [[ "$AllEvents" = "1" ]] ; then
