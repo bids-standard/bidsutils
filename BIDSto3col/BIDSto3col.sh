@@ -135,7 +135,7 @@ while (( $# > 1 )) ; do
         "-b")
             shift
             ShiftSec="$1"
-	    FailIfEmpty "$ShiftSEc" "seconds shift (-b option)"
+	    FailIfEmpty "$ShiftSec" "seconds shift (-b option)"
             shift
             ;;
         -*)
