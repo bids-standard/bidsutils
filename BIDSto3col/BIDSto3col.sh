@@ -258,7 +258,7 @@ for E in "${EventNms[@]}" ; do
     Out="${OutBase}${App}.${ThreeColExt}"
     OutHt="${OutBase}${App}_pmod.${ThreeColExt}"
 
-    echo "Creating '$Out'... "
+    echo -n "Creating '$Out'"
 
     if [ "$AllEvents" = "1" ] ; then
 	AwkSel="(NR>1)"
@@ -280,6 +280,8 @@ for E in "${EventNms[@]}" ; do
 
     if [ "$HeightNm" != "" ] ; then
 
+	echo " & '$OutHt'"
+
 	awk -F'\t' "$AwkHd""$AwkSel"'{printf("%s	%s	%s\n",$1-('"$ShiftSec"'),$'"$DurCol"',$'"$HeightCol"')}' "$TSV" > "$OutHt"
 
 	# Validate height values
@@ -289,6 +291,8 @@ for E in "${EventNms[@]}" ; do
 	    echo "	WARNING: Event '$E' has non-numeric heights from '$HeightNm'"
 	fi
 
+    else
+	echo
     fi
 
 done
